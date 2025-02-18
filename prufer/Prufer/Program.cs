@@ -1,112 +1,135 @@
-﻿internal class Program
+﻿using System.IO;
+
+internal class Program
 {
     static void Main(string[] args)
     {
-        List<int> tree1 = new List<int>();
-        List<int> tree2 = new List<int>();
+        List<int> sourceVertices = new List<int>();
+        List<int> destinationVertices = new List<int>();
 
         // Читаем данные из файла
-        ReadGraphFromFile("tree.txt", tree1, tree2);
+        ReadGraphFromFile("tree.txt", sourceVertices, destinationVertices);
 
         // Создаем лист для хранения кодов Пруфера
-        List<int> codPruferResult = new List<int>();
+        List<int> pruferCodes = new List<int>();
 
         // Выполняем кодирование Пруфера
-        EncodePrufer(tree1, tree2, codPruferResult);
+        EncodePrufer(sourceVertices, destinationVertices, pruferCodes);
 
         // Выводим результат
-        PrintPruferCodes(codPruferResult);
+        PrintPruferCodes(pruferCodes);
 
         // Записываем результат в файл
-        WritePruferCodesToFile("CodPrufera.txt", codPruferResult);
+        WritePruferCodesToFile("CodPrufera.txt", pruferCodes);
     }
 
     // Метод для чтения графа из файла
     private static void ReadGraphFromFile(string fileName, List<int> tree1, List<int> tree2)
     {
-        using (StreamReader sr = new StreamReader(fileName))
+        try
         {
-            while (!sr.EndOfStream)
+            using (StreamReader sr = new StreamReader(fileName))
             {
-                string[] array = sr.ReadLine().Split(" ");
-                tree1.Add(Convert.ToInt32(array[0]));
-                tree2.Add(Convert.ToInt32(array[1]));
+                while (!sr.EndOfStream)
+                {
+                    string[] array = sr.ReadLine().Split(" ");
+                    if (array.Length != 2)
+                    {
+                        throw new FormatException("Строка должна содержать два числа.");
+                    }
+                    tree1.Add(Convert.ToInt32(array[0]));
+                    tree2.Add(Convert.ToInt32(array[1]));
+                }
             }
+        }
+        catch (FileNotFoundException)
+        {
+            Console.WriteLine($"Файл {fileName} не найден.");
+        }
+        catch (IOException)
+        {
+            Console.WriteLine($"Ошибка при чтении файла {fileName}.");
+        }
+        catch (FormatException ex)
+        {
+            Console.WriteLine($"Ошибка при преобразовании строки в число: {ex.Message}");
         }
     }
 
-    // Метод для кодирования Пруфера
-    private static void EncodePrufer(List<int> tree1, List<int> tree2, List<int> codPruferResult)
-    {
-        int a = tree1.Count - 1;
 
-        while (codPruferResult.Count < a)
+    // Метод для кодирования Пруфера
+    private static void EncodePrufer(List<int> sourceVertices, List<int> destinationVertices, List<int> pruferCodes)
+    {
+        int numberOfEdges = sourceVertices.Count - 1;
+
+        while (pruferCodes.Count < numberOfEdges)
         {
             // Поиск листьев
-            List<int> sheet = new List<int>();
-            List<int> sheetIndex = new List<int>();
-            List<int> momOfSheet = new List<int>();
+            List<int> leafVertices = new List<int>();
+            List<int> leafIndices = new List<int>();
+            List<int> leafParents = new List<int>();
 
-            for (int i = 0; i < tree1.Count; i++)
+            for (int i = 0; i < sourceVertices.Count; i++)
             {
-                if (!tree1.Contains(tree2[i]))
+                if (!sourceVertices.Contains(destinationVertices[i]))
                 {
-                    sheet.Add(tree2[i]);
-                    momOfSheet.Add(tree1[i]);
-                    sheetIndex.Add(i);
+                    leafVertices.Add(destinationVertices[i]);
+                    leafParents.Add(sourceVertices[i]);
+                    leafIndices.Add(i);
                 }
-                else if (!tree2.Contains(tree1[i]) && tree1.Where(x => x == tree1[i]).Count() == 1)
+                else if (!destinationVertices.Contains(sourceVertices[i]) && sourceVertices.Where(x => x == sourceVertices[i]).Count() == 1)
                 {
-                    sheet.Add(tree1[i]);
-                    momOfSheet.Add(tree2[i]);
-                    sheetIndex.Add(i);
+                    leafVertices.Add(sourceVertices[i]);
+                    leafParents.Add(destinationVertices[i]);
+                    leafIndices.Add(i);
                 }
             }
 
             // Поиск минимального листа
             int minIndex = 0;
-            int minimum = sheet[minIndex];
+            int minimum = leafVertices[minIndex];
 
-            for (int j = 0; j < sheet.Count; j++)
+            for (int j = 0; j < leafVertices.Count; j++)
             {
-                if (minimum > sheet[j])
+                if (minimum > leafVertices[j])
                 {
-                    minimum = sheet[j];
+                    minimum = leafVertices[j];
                     minIndex = j;
                 }
             }
 
             // Добавление кода Пруфера и удаление ребра
-            int indexdel = sheetIndex[minIndex];
-            codPruferResult.Add(momOfSheet[minIndex]);
+            int indexToDelete = leafIndices[minIndex];
+            pruferCodes.Add(leafParents[minIndex]);
 
-            tree2.RemoveAt(indexdel);
-            tree1.RemoveAt(indexdel);
+            destinationVertices.RemoveAt(indexToDelete);
+            sourceVertices.RemoveAt(indexToDelete);
 
-            sheetIndex.Clear();
-            sheet.Clear();
-            momOfSheet.Clear();
+            leafIndices.Clear();
+            leafVertices.Clear();
+            leafParents.Clear();
         }
     }
 
     // Метод для вывода кодов Пруфера
-    private static void PrintPruferCodes(List<int> codPruferResult)
+    private static void PrintPruferCodes(List<int> pruferCodes)
     {
-        foreach (int i in codPruferResult)
+        foreach (int code in pruferCodes)
         {
-            Console.WriteLine(i + " ");
+            Console.WriteLine(code + " ");
         }
     }
 
     // Метод для записи кодов Пруфера в файл
     private static void WritePruferCodesToFile(string fileName, List<int> codPruferResult)
     {
-        using (StreamWriter sw = new StreamWriter(fileName, false))
+        try
         {
-            foreach (var item in codPruferResult)
-            {
-                sw.WriteLine(item + " ");
-            }
+            File.WriteAllLines(fileName, codPruferResult.Select(x => x.ToString()));
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Ошибка при записи в файл {fileName}: {ex.Message}");
         }
     }
 }
