@@ -1,4 +1,6 @@
-﻿internal class Program
+﻿using System.IO;
+
+internal class Program
 {
     static void Main(string[] args)
     {
@@ -28,12 +30,24 @@
         {
             while (!sr.EndOfStream)
             {
-                string[] array = sr.ReadLine().Split(" ");
+                string line = sr.ReadLine();
+                if (line == null)
+                {
+                    throw new FileLoadException("Не удалось прочитать строку из файла.");
+                }
+
+                string[] array = line.Split(" ");
+                if (array.Length != 2)
+                {
+                    throw new FileLoadException("Неверный формат данных в файле.");
+                }
+
                 sourceVertices.Add(Convert.ToInt32(array[0]));
                 destinationVertices.Add(Convert.ToInt32(array[1]));
             }
         }
     }
+
 
     // Метод для кодирования Пруфера
     private static void EncodePrufer(List<int> sourceVertices, List<int> destinationVertices, List<int> pruferCodes)
