@@ -24,27 +24,35 @@ internal class Program
     }
 
     // Метод для чтения графа из файла
-    private static void ReadGraphFromFile(string fileName, List<int> sourceVertices, List<int> destinationVertices)
+    private static void ReadGraphFromFile(string fileName, List<int> tree1, List<int> tree2)
     {
-        using (StreamReader sr = new StreamReader(fileName))
+        try
         {
-            while (!sr.EndOfStream)
+            using (StreamReader sr = new StreamReader(fileName))
             {
-                string line = sr.ReadLine();
-                if (line == null)
+                while (!sr.EndOfStream)
                 {
-                    throw new FileLoadException("Не удалось прочитать строку из файла.");
+                    string[] array = sr.ReadLine().Split(" ");
+                    if (array.Length != 2)
+                    {
+                        throw new FormatException("Строка должна содержать два числа.");
+                    }
+                    tree1.Add(Convert.ToInt32(array[0]));
+                    tree2.Add(Convert.ToInt32(array[1]));
                 }
-
-                string[] array = line.Split(" ");
-                if (array.Length != 2)
-                {
-                    throw new FileLoadException("Неверный формат данных в файле.");
-                }
-
-                sourceVertices.Add(Convert.ToInt32(array[0]));
-                destinationVertices.Add(Convert.ToInt32(array[1]));
             }
+        }
+        catch (FileNotFoundException)
+        {
+            Console.WriteLine($"Файл {fileName} не найден.");
+        }
+        catch (IOException)
+        {
+            Console.WriteLine($"Ошибка при чтении файла {fileName}.");
+        }
+        catch (FormatException ex)
+        {
+            Console.WriteLine($"Ошибка при преобразовании строки в число: {ex.Message}");
         }
     }
 
@@ -113,14 +121,15 @@ internal class Program
     }
 
     // Метод для записи кодов Пруфера в файл
-    private static void WritePruferCodesToFile(string fileName, List<int> pruferCodes)
+    private static void WritePruferCodesToFile(string fileName, List<int> codPruferResult)
     {
-        using (StreamWriter sw = new StreamWriter(fileName, false))
+        try
         {
-            foreach (var code in pruferCodes)
-            {
-                sw.WriteLine(code + " ");
-            }
+            File.WriteAllLines(fileName, codPruferResult.Select(x => x.ToString()));
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Ошибка при записи в файл {fileName}: {ex.Message}");
         }
     }
 }
